@@ -24,7 +24,7 @@ export default function SongDetails() {
   const fetchSongData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/songs/get-recordings/${id}/recordings`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/get-recordings/${id}/recordings`);
       
       if (!response.ok) {
         throw new Error(`Server error: ${response.status}`);
@@ -76,7 +76,7 @@ export default function SongDetails() {
     formData.append('audio', recAudio);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/songs/save-record/${id}/recordings`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/save-record/${id}/recordings`, {
         method: 'POST',
         body: formData,
       });

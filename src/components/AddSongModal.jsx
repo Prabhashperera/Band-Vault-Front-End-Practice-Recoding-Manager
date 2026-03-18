@@ -29,7 +29,7 @@ export default function AddSongModal({ isOpen, onClose, onSongAdded }) {
     formData.append('image', imageFile);
 
     try {
-      const response = await fetch('http://localhost:3000/api/songs/save-song', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/save-song`, {
         method: 'POST',
         // Note: Do NOT set 'Content-Type' manually when using FormData. 
         // The browser sets it automatically with the correct boundary.

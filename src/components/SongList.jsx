@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Plus, MoreVertical, Music, Play } from 'lucide-react';
-// 1. IMPORT YOUR NEW MODAL
+// Added Trash2 icon for the delete button
+import { Search, Plus, Trash2, Music, Play } from 'lucide-react';
 import AddSongModal from './AddSongModal';
 
 export default function SongList() {
@@ -10,10 +10,8 @@ export default function SongList() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // 2. ADD STATE FOR THE MODAL
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // We move the fetch logic into its own reusable function so the modal can trigger it
   const fetchSongs = async () => {
     try {
       const response = await fetch('http://localhost:3000/api/songs/get-songs');
@@ -30,6 +28,33 @@ export default function SongList() {
     fetchSongs();
   }, []);
 
+  // --- DELETE FUNCTION ---
+  const handleDeleteSong = async (e, songId) => {
+    // Stop the click from triggering the <Link> wrapper
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Confirm before deleting
+    if (!window.confirm("Are you sure you want to delete this song and all its recordings?")) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/delete-song/${songId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete the song');
+      }
+
+      // Remove the song from the UI instantly without reloading the page
+      setSongs((prevSongs) => prevSongs.filter((song) => song._id !== songId));
+
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Could not delete the song. Please try again.");
+    }
+  };
+
   const filteredSongs = songs.filter(song => 
     song.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -37,36 +62,31 @@ export default function SongList() {
   return (
     <div className="w-full min-h-screen bg-black relative overflow-hidden text-gray-100 pb-28 font-sans selection:bg-white/30">
       
-      {/* 3. PLACE THE MODAL COMPONENT */}
       <AddSongModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onSongAdded={fetchSongs} // Refreshes the list when a song is successfully saved
+        onSongAdded={fetchSongs}
       />
 
-      {/* Ambient Spatial Background Orbs */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-600/30 rounded-full mix-blend-screen filter blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] pointer-events-none"></div>
 
-      {/* Floating Spatial Header */}
       <header className="sticky top-0 z-30 px-4 pt-12 pb-6">
         <div className="flex justify-between items-center mb-6 px-2">
           <h1 className="text-3xl font-medium tracking-tight text-white/90 drop-shadow-md">
             Hymns Vault
           </h1>
           
-          {/* Header Add Button */}
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)] hover:bg-white/20 transition-all text-white/80 hover:text-white"
-            onClick={() => setIsModalOpen(true)} // 4. OPEN MODAL ON CLICK
+            onClick={() => setIsModalOpen(true)}
           >
             <Plus className="h-5 w-5" />
           </motion.button>
         </div>
 
-        {/* ... (Search Bar code remains exactly the same) ... */}
         <div className="relative group mx-2">
           <div className="absolute inset-0 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.3)]"></div>
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/50 h-5 w-5 group-focus-within:text-white transition-colors z-10" />
@@ -80,10 +100,8 @@ export default function SongList() {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="px-4 mt-4 relative z-20">
         
-        {/* Loading State */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20 text-white/50">
             <motion.div 
@@ -97,7 +115,6 @@ export default function SongList() {
           </div>
         )}
 
-        {/* List View */}
         {!isLoading && (
           <div className="space-y-3 px-2">
             {filteredSongs.map((song, index) => {
@@ -107,7 +124,6 @@ export default function SongList() {
 
               return (
                 <Link to={`/song/${song._id}`} key={song._id} className="block outline-none">
-                  {/* ... (Song Item code remains exactly the same) ... */}
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -134,9 +150,15 @@ export default function SongList() {
                         <p className="text-[13px] text-white/50 truncate mt-0.5">Added {dateAdded}</p>
                       </div>
                     </div>
-                    <button className="p-2.5 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors" onClick={(e) => { e.preventDefault(); }}>
-                      <MoreVertical className="h-5 w-5" />
+                    
+                    {/* UPDATED: Delete Button */}
+                    <button 
+                      className="p-2.5 rounded-full text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors z-10" 
+                      onClick={(e) => handleDeleteSong(e, song._id)}
+                    >
+                      <Trash2 className="h-5 w-5" />
                     </button>
+
                   </motion.div>
                 </Link>
               );
@@ -153,11 +175,10 @@ export default function SongList() {
         )}
       </main>
 
-      {/* Floating Action Button (Optional - you can remove this since you have the header button) */}
       <motion.button 
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.9 }}
-        onClick={() => setIsModalOpen(true)} // 5. OPEN MODAL ON CLICK
+        onClick={() => setIsModalOpen(true)}
         className="fixed bottom-10 right-6 h-14 w-14 bg-white/10 backdrop-blur-3xl border border-white/20 text-white rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(255,255,255,0.1)] transition-all z-40 group"
       >
         <Plus className="h-6 w-6 text-white/80 group-hover:text-white transition-colors" />
