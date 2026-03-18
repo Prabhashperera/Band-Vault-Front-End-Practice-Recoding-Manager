@@ -14,7 +14,7 @@ export default function SongList() {
 
   const fetchSongs = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/songs/get-songs');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/get-songs`);
       const data = await response.json();
       setSongs(data.songs || []); 
     } catch (error) {
