@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Mic2, Star, Upload, Music, Edit2, X, Save, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Mic2, Star, Upload, Music, Edit2, X, Save, ImagePlus, Trash2 } from 'lucide-react';
 
 export default function SongDetails() {
   const { id } = useParams();
@@ -63,6 +63,27 @@ export default function SongDetails() {
       return;
     }
     setIsSubmitting(true);
+
+    // --- HANDLE DELETE RECORDING ---
+  const handleDeleteRecording = async (recordingId) => {
+    // Show a confirmation popup so the user doesn't delete by accident
+    if (!window.confirm("Are you sure you want to delete this recording? This action cannot be undone.")) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/delete-record/${id}/recordings/${recordingId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete recording');
+      
+      // Refresh the data to remove it from the screen
+      await fetchSongData();
+      
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete recording.");
+    }
+  };
 
     const formData = new FormData();
     formData.append('title', recTitle);
@@ -231,6 +252,10 @@ export default function SongDetails() {
                     )}
                     <button onClick={() => openEditRecord(recording)} className="p-1.5 rounded-full bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100">
                       <Edit2 className="w-4 h-4" />
+                    </button>
+                    {/* New Delete Button */}
+                    <button onClick={() => handleDeleteRecording(recording._id)} className="p-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-all">
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                   
