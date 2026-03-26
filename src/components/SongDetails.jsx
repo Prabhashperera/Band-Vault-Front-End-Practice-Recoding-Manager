@@ -64,27 +64,6 @@ export default function SongDetails() {
     }
     setIsSubmitting(true);
 
-    // --- HANDLE DELETE RECORDING ---
-  const handleDeleteRecording = async (recordingId) => {
-    // Show a confirmation popup so the user doesn't delete by accident
-    if (!window.confirm("Are you sure you want to delete this recording? This action cannot be undone.")) return;
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/delete-record/${id}/recordings/${recordingId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete recording');
-      
-      // Refresh the data to remove it from the screen
-      await fetchSongData();
-      
-    } catch (error) {
-      console.error(error);
-      alert("Failed to delete recording.");
-    }
-  };
-
     const formData = new FormData();
     formData.append('title', recTitle);
     formData.append('singer', recSinger);
@@ -176,6 +155,27 @@ export default function SongDetails() {
       alert("Failed to update recording.");
     } finally {
       setIsSavingRecord(false);
+    }
+  };
+
+      // --- HANDLE DELETE RECORDING ---
+  const handleDeleteRecording = async (recordingId) => {
+    // Show a confirmation popup so the user doesn't delete by accident
+    if (!window.confirm("Are you sure you want to delete this recording? This action cannot be undone.")) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/delete-record/${id}/recordings/${recordingId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete recording');
+      
+      // Refresh the data to remove it from the screen
+      await fetchSongData();
+      
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete recording.");
     }
   };
 
