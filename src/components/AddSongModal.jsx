@@ -1,54 +1,48 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Music } from 'lucide-react';
+import { X, Save, ImagePlus } from 'lucide-react';
 
 export default function AddSongModal({ isOpen, onClose, onSongAdded }) {
   const [title, setTitle] = useState('');
   const [composer, setComposer] = useState('');
-  const [imageFile, setImageFile] = useState(null);
+  const [image, setImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const handleClose = () => {
+    setTitle('');
+    setComposer('');
+    setImage(null);
+    setError('');
+    onClose();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    if (!title || !imageFile) {
-      setError('Please provide a title and a cover image.');
+    if (!title) {
+      setError("Title is required");
       return;
     }
 
     setIsSubmitting(true);
-
-    // Because we are sending a file, we MUST use FormData
     const formData = new FormData();
     formData.append('title', title);
     if (composer) formData.append('composer', composer);
-    
-    // The key "image" must match exactly what upload.single("image") expects
-    formData.append('image', imageFile);
+    if (image) formData.append('image', image);
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/save-song`, {
         method: 'POST',
-        // Note: Do NOT set 'Content-Type' manually when using FormData. 
-        // The browser sets it automatically with the correct boundary.
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save the song.');
-      }
+      if (!response.ok) throw new Error('Failed to save song');
 
-      // Success! Reset form and tell parent to refresh the list
-      setTitle('');
-      setComposer('');
-      setImageFile(null);
       onSongAdded(); 
-      onClose();
-
+      handleClose(); 
     } catch (err) {
-      setError(err.message);
+      setError("Failed to add song. Please try again.");
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -57,93 +51,77 @@ export default function AddSongModal({ isOpen, onClose, onSongAdded }) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4">
           
-          {/* Deep Blur Backdrop */}
+          {/* Background Blur Overlay */}
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            onClick={handleClose} 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
           />
-
-          {/* Modal Content (Glassmorphism) */}
+          
+          {/* Bottom Sheet for Mobile / Rounded Rect for Desktop */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-md bg-white/[0.05] border border-white/10 rounded-[2rem] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-3xl"
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+            initial={{ y: "100%" }} 
+            animate={{ y: 0 }} 
+            exit={{ y: "100%" }} 
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="bg-[#111] sm:border sm:border-white/10 w-full sm:max-w-md rounded-t-[2rem] sm:rounded-3xl p-6 sm:p-8 relative z-10 shadow-[0_-8px_40px_rgba(0,0,0,0.5)] sm:shadow-2xl max-h-[90vh] overflow-y-auto pb-10 sm:pb-8"
           >
-            <button 
-              onClick={onClose}
-              className="absolute top-6 right-6 text-white/40 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-full transition-all"
-            >
-              <X className="h-5 w-5" />
+            {/* Small drag handle indicator for mobile */}
+            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6 sm:hidden"></div>
+
+            <button onClick={handleClose} className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors bg-white/5 p-2 rounded-full">
+              <X className="w-5 h-5" />
             </button>
-
-            <h2 className="text-2xl font-medium text-white/90 mb-6 tracking-tight flex items-center gap-2">
-              <Music className="h-6 w-6 text-white/50" />
-              Add to Vault
-            </h2>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-200 text-sm">
-                {error}
-              </div>
-            )}
+            
+            <h3 className="text-2xl font-medium mb-6 text-white/90">Add New Song</h3>
+            
+            {error && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl">{error}</div>}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-[13px] font-medium text-white/50 mb-1.5 pl-1">Song Title *</label>
                 <input 
                   type="text" 
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-white/20 focus:ring-1 focus:ring-white/30 focus:border-white/30 focus:bg-white/5 focus:outline-none transition-all" 
-                  placeholder="e.g., Amazing Grace" 
+                  value={title} 
+                  onChange={(e) => setTitle(e.target.value)} 
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition-colors" 
+                  placeholder="e.g., Amazing Grace"
+                  required 
                 />
               </div>
-
+              
               <div>
-                <label className="block text-[13px] font-medium text-white/50 mb-1.5 pl-1">Singer</label>
+                <label className="block text-[13px] font-medium text-white/50 mb-1.5 pl-1">Composer (Optional)</label>
                 <input 
                   type="text" 
-                  value={composer}
-                  onChange={(e) => setComposer(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-white/20 focus:ring-1 focus:ring-white/30 focus:border-white/30 focus:bg-white/5 focus:outline-none transition-all" 
-                  placeholder="Optional" 
+                  value={composer} 
+                  onChange={(e) => setComposer(e.target.value)} 
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-white/30 transition-colors" 
+                  placeholder="e.g., John Newton"
                 />
               </div>
-
+              
               <div>
-                <label className="block text-[13px] font-medium text-white/50 mb-1.5 pl-1">Cover Image *</label>
-                <label className="flex flex-col items-center justify-center border border-dashed border-white/20 hover:border-white/40 hover:bg-white/5 transition-all rounded-2xl p-6 text-center cursor-pointer group bg-black/20">
-                  <Upload className="h-6 w-6 text-white/40 mb-2 group-hover:text-white/80 transition-colors" />
-                  <span className="text-sm text-white/50 group-hover:text-white/80 transition-colors">
-                    {imageFile ? imageFile.name : "Select Image (JPG/PNG)"}
-                  </span>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={(e) => setImageFile(e.target.files[0])}
-                  />
+                <label className="block text-[13px] font-medium text-white/50 mb-1.5 pl-1">Cover Image (Optional)</label>
+                <label className="flex items-center justify-center gap-2 border border-dashed border-white/20 hover:border-white/40 hover:bg-white/5 transition-all rounded-2xl py-5 cursor-pointer bg-black/20 text-white/50 hover:text-white/80 group">
+                  <ImagePlus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span className="text-sm truncate px-2">{image ? image.name : "Select an image file"}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => setImage(e.target.files[0])} />
                 </label>
               </div>
-
-              <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                disabled={isSubmitting}
+              
+              <button 
+                disabled={isSubmitting} 
                 type="submit" 
-                className={`w-full text-black font-medium py-3.5 rounded-2xl transition-all mt-2 ${isSubmitting ? 'bg-white/50 cursor-not-allowed' : 'bg-white hover:shadow-[0_4px_25px_rgba(255,255,255,0.3)] shadow-[0_4px_20px_rgba(255,255,255,0.2)]'}`}
+                className={`w-full text-black font-medium py-4 rounded-2xl mt-4 flex justify-center items-center gap-2 transition-all ${isSubmitting ? 'bg-white/50 cursor-not-allowed' : 'bg-white active:scale-[0.98]'}`}
               >
-                {isSubmitting ? 'Uploading...' : 'Save Song'}
-              </motion.button>
+                {isSubmitting ? 'Saving to Vault...' : <><Save className="w-5 h-5" /> Add to Vault</>}
+              </button>
             </form>
-
           </motion.div>
         </div>
       )}
