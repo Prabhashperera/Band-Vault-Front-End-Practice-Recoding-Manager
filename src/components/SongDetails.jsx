@@ -1,8 +1,89 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Mic2, Star, Upload, Music, Edit2, X, Save, ImagePlus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Mic2, Star, Upload, Music, Edit2, X, Save, ImagePlus, Trash2, Play, Pause } from 'lucide-react';
 
+// --- CUSTOM AUDIO PLAYER COMPONENT ---
+const CustomAudioPlayer = ({ src }) => {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  // Handle Play/Pause
+  const togglePlayPause = () => {
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  // Update Progress Bar
+  const onTimeUpdate = () => {
+    const currentTime = audioRef.current.currentTime;
+    setProgress((currentTime / duration) * 100);
+  };
+
+  // Format Time (e.g., 01:23)
+  const formatTime = (time) => {
+    if (!time || isNaN(time)) return "00:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  // Handle User Scrubbing
+  const handleSeek = (e) => {
+    const seekTime = (e.target.value / 100) * duration;
+    audioRef.current.currentTime = seekTime;
+    setProgress(e.target.value);
+  };
+
+  return (
+    <div className="flex items-center gap-3 w-full bg-black/40 border border-white/10 rounded-2xl p-3 backdrop-blur-md mt-4">
+      <audio 
+        ref={audioRef} 
+        src={src} 
+        onTimeUpdate={onTimeUpdate} 
+        onLoadedMetadata={(e) => setDuration(e.target.duration)}
+        onEnded={() => setIsPlaying(false)}
+      />
+      
+      {/* Play/Pause Button */}
+      <button 
+        onClick={togglePlayPause} 
+        className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 active:scale-95 transition-transform"
+      >
+        {isPlaying ? <Pause className="h-4 w-4 fill-black" /> : <Play className="h-4 w-4 fill-black ml-0.5" />}
+      </button>
+
+      {/* Progress Bar & Time */}
+      <div className="flex-grow flex flex-col justify-center min-w-0 pr-2">
+        <div className="flex justify-between text-[10px] text-white/50 mb-1.5 px-1 font-mono tracking-wider">
+          <span>{formatTime(audioRef.current?.currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+        
+        <input 
+          type="range" 
+          min="0" 
+          max="100" 
+          value={isNaN(progress) ? 0 : progress} 
+          onChange={handleSeek}
+          className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30"
+          style={{
+            background: `linear-gradient(to right, white ${progress}%, rgba(255,255,255,0.2) ${progress}%)`
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+
+// --- MAIN COMPONENT ---
 export default function SongDetails() {
   const { id } = useParams();
   const [song, setSong] = useState(null);
@@ -158,9 +239,8 @@ export default function SongDetails() {
     }
   };
 
-      // --- HANDLE DELETE RECORDING ---
+  // --- HANDLE DELETE RECORDING ---
   const handleDeleteRecording = async (recordingId) => {
-    // Show a confirmation popup so the user doesn't delete by accident
     if (!window.confirm("Are you sure you want to delete this recording? This action cannot be undone.")) return;
 
     try {
@@ -170,7 +250,6 @@ export default function SongDetails() {
 
       if (!response.ok) throw new Error('Failed to delete recording');
       
-      // Refresh the data to remove it from the screen
       await fetchSongData();
       
     } catch (error) {
@@ -243,7 +322,7 @@ export default function SongDetails() {
                 <motion.div key={recording._id || index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="group bg-white/[0.04] border border-white/10 rounded-3xl p-6 backdrop-blur-2xl relative overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:bg-white/[0.06] transition-colors">
                   
                   {/* Top Right Badges & Actions */}
-                  <div className="absolute top-5 right-5 flex items-center gap-3">
+                  <div className="absolute top-5 right-5 flex items-center gap-3 z-10">
                     {recording.isFinalVersion && (
                       <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase text-yellow-200 bg-yellow-500/20 border border-yellow-500/30 px-3 py-1 rounded-full backdrop-blur-md">
                         <Star className="h-3 w-3 fill-yellow-200" /> Final
@@ -268,12 +347,9 @@ export default function SongDetails() {
                   
                   {recording.notes && <p className="text-sm text-white/70 mb-6 bg-black/20 border border-white/5 p-4 rounded-2xl leading-relaxed">{recording.notes}</p>}
 
+                  {/* USE CUSTOM PLAYER INSTEAD OF NATIVE AUDIO */}
                   {recording.cloudUrl && (
-                    <div className="bg-white/5 rounded-2xl p-2 border border-white/10 backdrop-blur-md">
-                      <audio controls className="w-full h-10 outline-none opacity-80 hover:opacity-100 transition-opacity">
-                        <source src={recording.cloudUrl} type="audio/mpeg" />
-                      </audio>
-                    </div>
+                    <CustomAudioPlayer src={recording.cloudUrl} />
                   )}
                 </motion.div>
               ))}
