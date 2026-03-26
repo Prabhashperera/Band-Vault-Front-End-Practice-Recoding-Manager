@@ -224,7 +224,6 @@ export default function SongDetails() {
                 <Edit2 className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-xl text-white/50 font-medium tracking-wide">Added to vault</p>
           </div>
         </div>
 
