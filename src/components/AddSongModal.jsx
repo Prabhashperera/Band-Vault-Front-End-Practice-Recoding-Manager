@@ -107,7 +107,7 @@ export default function AddSongModal({ isOpen, onClose, onSongAdded }) {
               </div>
 
               <div>
-                <label className="block text-[13px] font-medium text-white/50 mb-1.5 pl-1">Composer / Artist</label>
+                <label className="block text-[13px] font-medium text-white/50 mb-1.5 pl-1">Singer</label>
                 <input 
                   type="text" 
                   value={composer}
